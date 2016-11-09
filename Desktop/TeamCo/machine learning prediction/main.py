@@ -11,55 +11,69 @@ from sklearn import svm
 import matplotlib.pyplot as plt
 import random
 
+
+
+def gen_df(dataframe):
+    n = 10
+    dataframe['SMA_10'] = dataframe['Adj Close'].rolling(window=n).mean()
+    mo_arr = dataframe['Adj Close'][9:].values - dataframe['Adj Close'][:-9].values
+    dataframe['Momentum'] = np.zeros(len(dataframe.index))
+    dataframe.loc[9:,'Momentum'] = mo_arr
+    dataframe['LL'] = sp_df['Adj Close'].rolling(window=n).min()
+    dataframe['HH'] = sp_df['Adj Close'].rolling(window=n).max()
+    dataframe['stoch_K'] = 100 * (dataframe['Adj Close']- dataframe['LL'])/(dataframe['HH']- dataframe['LL'])
+    for i in range(9,len(dataframe.index)):
+        dataframe.loc[i,'WMA_10'] = (10*dataframe.loc[i,'Adj Close']+9*dataframe.loc[i-1,'Adj Close']+
+                            8*dataframe.loc[i-2,'Adj Close']+7*dataframe.loc[i-3,'Adj Close']+
+                            6*dataframe.loc[i-4,'Adj Close']+5*dataframe.loc[i-5,'Adj Close']+
+                            4*dataframe.loc[i-6,'Adj Close']+3*dataframe.loc[i-7,'Adj Close']+
+                            2*dataframe.loc[i-8,'Adj Close']+dataframe.loc[i-9,'Adj Close'])/sum(range(1,11,1))
+    dataframe['EMA_12'] = dataframe['Adj Close'].ewm(span=12).mean()
+    dataframe['EMA_26'] = dataframe['Adj Close'].ewm(span=26).mean()
+    dataframe['DIFF'] = dataframe['EMA_12'] - dataframe['EMA_26']
+    dataframe['MACD'] = np.zeros(len(dataframe.index))
+    dataframe['A/D'] = np.zeros(len(dataframe.index))
+    for i in range(1,len(dataframe.index)):
+        dataframe.loc[i,'MACD'] = dataframe.loc[i-1,'MACD'] + 2/(n+1)*(dataframe.loc[i,'DIFF']-dataframe.loc[i-1,'MACD'])
+        dataframe.loc[i,'A/D'] = (dataframe.loc[i,'High']-dataframe.loc[i-1,'Adj Close'])/(dataframe.loc[i,'High']-dataframe.loc[i,'Low'])
+    
+    return dataframe
+    
+
+def gen_op_df(dataframe):
+    op_df = pd.DataFrame(np.zeros((len(dataframe),7)), columns=['SMA_10', 'Momentum', 
+                         'stoch_K', 'WMA_10', 'MACD', 'A/D', 'Adj Close'])
+    for i in range(10,len(sp_df.index)):
+        op_df.loc[i,'SMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'SMA_10']) else 0
+        op_df.loc[i,'WMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'WMA_10']) else 0
+        op_df.loc[i,'MACD']=1 if (dataframe.loc[i,'MACD']>dataframe.loc[i-1,'MACD']) else 0
+        op_df.loc[i,'stoch_K']=1 if (dataframe.loc[i,'stoch_K']>dataframe.loc[i-1,'stoch_K']) else 0
+        op_df.loc[i,'Momentum']=1 if (dataframe.loc[i,'Momentum']>0) else 0
+        op_df.loc[i,'A/D']=1 if (dataframe.loc[i,'A/D']>dataframe.loc[i-1,'A/D']) else 0
+        op_df.loc[i,'Adj Close']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i-1,'Adj Close']) else 0
+    # drop first 10 columns due to nan
+    op_df = op_df[10:]
+    return op_df
+
 if __name__ == '__main__':
     ### file path
     os.chdir(r'C:\Users\ZFang\Desktop\TeamCo\machine learning prediction\\')
-    sp_df = pd.read_csv('sp500.csv')
+    file_name = 'sp500_monthly.csv'
+    new_file_name = 'sp500_monthly_op.csv'
+    sp_df = pd.read_csv(file_name)
     
     
     ### Generate the columns, calculate the technical indactors
-    n = 10
-    sp_df['SMA_10'] = sp_df['Adj Close'].rolling(window=n).mean()
-    mo_arr = sp_df['Adj Close'][9:].values - sp_df['Adj Close'][:-9].values
-    sp_df['Momentum'] = np.zeros(len(sp_df.index))
-    sp_df.loc[9:,'Momentum'] = mo_arr
-    sp_df['LL'] = sp_df['Adj Close'].rolling(window=n).min()
-    sp_df['HH'] = sp_df['Adj Close'].rolling(window=n).max()
-    sp_df['stoch_K'] = 100 * (sp_df['Adj Close']- sp_df['LL'])/(sp_df['HH']- sp_df['LL'])
-    for i in range(9,len(sp_df.index)):
-        sp_df.loc[i,'WMA_10'] = (10*sp_df.loc[i,'Adj Close']+9*sp_df.loc[i-1,'Adj Close']+
-                            8*sp_df.loc[i-2,'Adj Close']+7*sp_df.loc[i-3,'Adj Close']+
-                            6*sp_df.loc[i-4,'Adj Close']+5*sp_df.loc[i-5,'Adj Close']+
-                            4*sp_df.loc[i-6,'Adj Close']+3*sp_df.loc[i-7,'Adj Close']+
-                            2*sp_df.loc[i-8,'Adj Close']+sp_df.loc[i-9,'Adj Close'])/sum(range(1,11,1))
-    sp_df['EMA_12'] = sp_df['Adj Close'].ewm(span=12).mean()
-    sp_df['EMA_26'] = sp_df['Adj Close'].ewm(span=26).mean()
-    sp_df['DIFF'] = sp_df['EMA_12'] - sp_df['EMA_26']
-    sp_df['MACD'] = np.zeros(len(sp_df.index))
-    sp_df['A/D'] = np.zeros(len(sp_df.index))
-    for i in range(1,len(sp_df.index)):
-        sp_df.loc[i,'MACD'] = sp_df.loc[i-1,'MACD'] + 2/(n+1)*(sp_df.loc[i,'DIFF']-sp_df.loc[i-1,'MACD'])
-        sp_df.loc[i,'A/D'] = (sp_df.loc[i,'High']-sp_df.loc[i-1,'Adj Close'])/(sp_df.loc[i,'High']-sp_df.loc[i,'Low'])
-        
+    sp_df = gen_df(sp_df)  
         
     ### Generate opinion dataframe, which use (-1,1) to measure the upward and downward trend
-    op_df = pd.DataFrame(np.zeros((2769,7)), columns=['SMA_10', 'Momentum', 
-                         'stoch_K', 'WMA_10', 'MACD', 'A/D', 'Adj Close'])
-    for i in range(10,len(sp_df.index)):
-        op_df.loc[i,'SMA_10']=1 if (sp_df.loc[i,'Adj Close']>sp_df.loc[i,'SMA_10']) else 0
-        op_df.loc[i,'WMA_10']=1 if (sp_df.loc[i,'Adj Close']>sp_df.loc[i,'WMA_10']) else 0
-        op_df.loc[i,'MACD']=1 if (sp_df.loc[i,'MACD']>sp_df.loc[i-1,'MACD']) else 0
-        op_df.loc[i,'stoch_K']=1 if (sp_df.loc[i,'stoch_K']>sp_df.loc[i-1,'stoch_K']) else 0
-        op_df.loc[i,'Momentum']=1 if (sp_df.loc[i,'Momentum']>0) else 0
-        op_df.loc[i,'A/D']=1 if (sp_df.loc[i,'A/D']>sp_df.loc[i-1,'A/D']) else 0
-        op_df.loc[i,'Adj Close']=1 if (sp_df.loc[i,'Adj Close']>sp_df.loc[i-1,'Adj Close']) else 0
-    # drop first 10 columns due to nan
-    op_df = op_df[10:]
-
-
+    op_df = gen_op_df(sp_df)
+    op_df.to_csv(new_file_name, index=True, header=True, index_label='index')
+    
+    # op_df = pd.read_csv(new_file_name, index_col='index')
     ### Training and Testing Set
     random.seed(0)
-    sample_index = random.sample(list(op_df.index),2000)
+    sample_index = random.sample(list(op_df.index),int(0.7*len(op_df.index)))
     op_df_train = op_df.ix[sample_index]
     op_df_test = op_df.drop(sample_index)
     columns = ['SMA_10','Momentum','stoch_K', 'WMA_10', 'MACD','A/D']

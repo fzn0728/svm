@@ -43,14 +43,14 @@ def gen_df(dataframe):
 def gen_op_df(dataframe):
     op_df = pd.DataFrame(np.zeros((len(dataframe),7)), columns=['SMA_10', 'Momentum', 
                          'stoch_K', 'WMA_10', 'MACD', 'A/D', 'Adj Close'])
-    for i in range(10,len(sp_df.index)):
+    for i in range(10,len(sp_df.index)-1):
         op_df.loc[i,'SMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'SMA_10']) else 0
         op_df.loc[i,'WMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'WMA_10']) else 0
         op_df.loc[i,'MACD']=1 if (dataframe.loc[i,'MACD']>dataframe.loc[i-1,'MACD']) else 0
         op_df.loc[i,'stoch_K']=1 if (dataframe.loc[i,'stoch_K']>dataframe.loc[i-1,'stoch_K']) else 0
         op_df.loc[i,'Momentum']=1 if (dataframe.loc[i,'Momentum']>0) else 0
         op_df.loc[i,'A/D']=1 if (dataframe.loc[i,'A/D']>dataframe.loc[i-1,'A/D']) else 0
-        op_df.loc[i,'Adj Close']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i-1,'Adj Close']) else 0
+        op_df.loc[i,'Adj Close']=1 if (dataframe.loc[i+1,'Adj Close']>dataframe.loc[i,'Adj Close']) else 0
     # drop first 10 columns due to nan
     op_df = op_df[10:]
     return op_df
@@ -58,8 +58,8 @@ def gen_op_df(dataframe):
 if __name__ == '__main__':
     ### file path
     os.chdir(r'C:\Users\ZFang\Desktop\TeamCo\machine learning prediction\\')
-    file_name = 'sp500_monthly.csv'
-    new_file_name = 'sp500_monthly_op.csv'
+    file_name = 'sp500.csv'
+    new_file_name = 'sp500_op.csv'
     sp_df = pd.read_csv(file_name)
     
     

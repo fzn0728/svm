@@ -41,8 +41,8 @@ def gen_df(dataframe):
     
 
 def gen_op_df(dataframe):
-    op_df = pd.DataFrame(np.zeros((len(dataframe),7)), columns=['SMA_10', 'Momentum', 
-                         'stoch_K', 'WMA_10', 'MACD', 'A/D', 'Adj Close'])
+    op_df = pd.DataFrame(np.zeros((len(dataframe),10)), columns=['SMA_10', 'Momentum', 
+                         'stoch_K', 'WMA_10', 'MACD', 'A/D', 'Volume', 'Fed Rate', 'Un Empl', 'Adj Close'])
     for i in range(10,len(sp_df.index)-1):
         op_df.loc[i,'SMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'SMA_10']) else 0
         op_df.loc[i,'WMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'WMA_10']) else 0
@@ -50,6 +50,9 @@ def gen_op_df(dataframe):
         op_df.loc[i,'stoch_K']=1 if (dataframe.loc[i,'stoch_K']>dataframe.loc[i-1,'stoch_K']) else 0
         op_df.loc[i,'Momentum']=1 if (dataframe.loc[i,'Momentum']>0) else 0
         op_df.loc[i,'A/D']=1 if (dataframe.loc[i,'A/D']>dataframe.loc[i-1,'A/D']) else 0
+        op_df.loc[i,'Volume']=1 if (dataframe.loc[i,'Volume']>dataframe.loc[i-1,'Volume']) else 0
+        op_df.loc[i,'Fed Rate']=1 if (dataframe.loc[i,'Fed Rate']>dataframe.loc[i-1,'Fed Rate']) else 0
+        op_df.loc[i,'Un Empl']=1 if (dataframe.loc[i,'Un Empl']>dataframe.loc[i-1,'Un Empl']) else 0
         op_df.loc[i,'Adj Close']=1 if (dataframe.loc[i+1,'Adj Close']>dataframe.loc[i,'Adj Close']) else 0
     # drop first 10 columns due to nan
     op_df = op_df[10:]
@@ -58,8 +61,8 @@ def gen_op_df(dataframe):
 if __name__ == '__main__':
     ### file path
     os.chdir(r'C:\Users\ZFang\Desktop\TeamCo\machine learning prediction\\')
-    file_name = 'sp500.csv'
-    new_file_name = 'sp500_op.csv'
+    file_name = 'sp500_monthly.csv'
+    new_file_name = 'sp500_monthly_op.csv'
     sp_df = pd.read_csv(file_name)
     
     
@@ -76,7 +79,7 @@ if __name__ == '__main__':
     sample_index = random.sample(list(op_df.index),int(0.7*len(op_df.index)))
     op_df_train = op_df.ix[sample_index]
     op_df_test = op_df.drop(sample_index)
-    columns = ['SMA_10','Momentum','stoch_K', 'WMA_10', 'MACD','A/D']
+    columns = ['SMA_10','Momentum','stoch_K', 'WMA_10', 'MACD','A/D', 'Volume', 'Fed Rate', 'Un Empl']
     X = op_df_train[columns].as_matrix()
     Y = op_df_train['Adj Close'].as_matrix()
     

@@ -41,8 +41,8 @@ def gen_df(dataframe):
     
 
 def gen_op_df(dataframe):
-    op_df = pd.DataFrame(np.zeros((len(dataframe),10)), columns=['SMA_10', 'Momentum', 
-                         'stoch_K', 'WMA_10', 'MACD', 'A/D', 'Volume', 'Fed Rate', 'Un Empl', 'Adj Close'])
+    op_df = pd.DataFrame(np.zeros((len(dataframe),12)), columns=['SMA_10', 'Momentum', 
+                         'stoch_K', 'WMA_10', 'MACD', 'A/D', 'Volume', 'Fed Rate', 'Un Empl', 'GDP', '3MTB', 'Adj Close'])
     for i in range(10,len(sp_df.index)-1):
         op_df.loc[i,'SMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'SMA_10']) else 0
         op_df.loc[i,'WMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'WMA_10']) else 0
@@ -53,6 +53,8 @@ def gen_op_df(dataframe):
         op_df.loc[i,'Volume']=1 if (dataframe.loc[i,'Volume']>dataframe.loc[i-1,'Volume']) else 0
         op_df.loc[i,'Fed Rate']=1 if (dataframe.loc[i,'Fed Rate']>dataframe.loc[i-1,'Fed Rate']) else 0
         op_df.loc[i,'Un Empl']=1 if (dataframe.loc[i,'Un Empl']>dataframe.loc[i-1,'Un Empl']) else 0
+        op_df.loc[i,'GDP']=1 if (dataframe.loc[i,'GDP']>dataframe.loc[i-1,'GDP']) else 0
+        op_df.loc[i,'3MTB']=1 if (dataframe.loc[i,'3MTB']>dataframe.loc[i-1,'3MTB']) else 0
         op_df.loc[i,'Adj Close']=1 if (dataframe.loc[i+1,'Adj Close']>dataframe.loc[i,'Adj Close']) else 0
     # drop first 10 columns due to nan
     op_df = op_df[10:]
@@ -79,7 +81,8 @@ if __name__ == '__main__':
     sample_index = random.sample(list(op_df.index),int(0.7*len(op_df.index)))
     op_df_train = op_df.ix[sample_index]
     op_df_test = op_df.drop(sample_index)
-    columns = ['SMA_10','Momentum','stoch_K', 'WMA_10', 'MACD','A/D', 'Volume', 'Fed Rate', 'Un Empl']
+    # columns = ['SMA_10','Momentum','stoch_K', 'WMA_10', 'MACD','A/D', 'Volume', 'Fed Rate', 'Un Empl', 'GDP']
+    columns = ['Fed Rate', 'Un Empl', 'GDP', , '3MTB']
     X = op_df_train[columns].as_matrix()
     Y = op_df_train['Adj Close'].as_matrix()
     

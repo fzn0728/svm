@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov  7 16:07:34 2016
+Created on Fri Nov 11 12:19:14 2016
 
 @author: ZFang
 """
+
+# -*- coding: utf-8 -*-
+
 import pandas as pd
 import os
 import numpy as np
 from sklearn import svm
 import matplotlib.pyplot as plt
 import random
+from datetime import datetime
 
 
 
@@ -19,8 +23,8 @@ def gen_df(dataframe):
     mo_arr = dataframe['Adj Close'][9:].values - dataframe['Adj Close'][:-9].values
     dataframe['Momentum'] = np.zeros(len(dataframe.index))
     dataframe.loc[9:,'Momentum'] = mo_arr
-    dataframe['LL'] = sp_df['Adj Close'].rolling(window=n).min()
-    dataframe['HH'] = sp_df['Adj Close'].rolling(window=n).max()
+    dataframe['LL'] = dataframe['Adj Close'].rolling(window=n).min()
+    dataframe['HH'] = dataframe['Adj Close'].rolling(window=n).max()
     dataframe['stoch_K'] = 100 * (dataframe['Adj Close']- dataframe['LL'])/(dataframe['HH']- dataframe['LL'])
     for i in range(9,len(dataframe.index)):
         dataframe.loc[i,'WMA_10'] = (10*dataframe.loc[i,'Adj Close']+9*dataframe.loc[i-1,'Adj Close']+
@@ -41,9 +45,10 @@ def gen_df(dataframe):
     
 
 def gen_op_df(dataframe):
-    op_df = pd.DataFrame(np.zeros((len(dataframe),12)), columns=['SMA_10', 'Momentum', 
-                         'stoch_K', 'WMA_10', 'MACD', 'A/D', 'Volume', 'Fed Rate', 'Un Empl', 'GDP', '3MTB', 'Adj Close'])
-    for i in range(10,len(sp_df.index)-1):
+    op_df = pd.DataFrame(np.zeros((len(dataframe),9)), columns=['Date', 'SMA_10', 'Momentum', 
+                         'stoch_K', 'WMA_10', 'MACD', 'A/D', 'Volume', 'Adj Close'])
+    op_df['Year'] = [datetime.strptime(i, '%Y-%m-%d').year for i in dataframe['Date'].values]
+    for i in range(10,len(ra_df.index)-1):
         op_df.loc[i,'SMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'SMA_10']) else 0
         op_df.loc[i,'WMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'WMA_10']) else 0
         op_df.loc[i,'MACD']=1 if (dataframe.loc[i,'MACD']>dataframe.loc[i-1,'MACD']) else 0
@@ -51,39 +56,21 @@ def gen_op_df(dataframe):
         op_df.loc[i,'Momentum']=1 if (dataframe.loc[i,'Momentum']>0) else 0
         op_df.loc[i,'A/D']=1 if (dataframe.loc[i,'A/D']>dataframe.loc[i-1,'A/D']) else 0
         op_df.loc[i,'Volume']=1 if (dataframe.loc[i,'Volume']>dataframe.loc[i-1,'Volume']) else 0
-        op_df.loc[i,'Fed Rate']=1 if (dataframe.loc[i,'Fed Rate']>dataframe.loc[i-1,'Fed Rate']) else 0
-        op_df.loc[i,'Un Empl']=1 if (dataframe.loc[i,'Un Empl']>dataframe.loc[i-1,'Un Empl']) else 0
-        op_df.loc[i,'GDP']=1 if (dataframe.loc[i,'GDP']>dataframe.loc[i-1,'GDP']) else 0
-        op_df.loc[i,'3MTB']=1 if (dataframe.loc[i,'3MTB']>dataframe.loc[i-1,'3MTB']) else 0
-        op_df.loc[i,'Adj Close']=1 if (dataframe.loc[i+1,'Adj Close']>dataframe.loc[i,'Adj Close']) else 0
+        op_df.loc[i,'Adj Close']=1 if (dataframe.loc[i+1,'Adj Close']/dataframe.loc[i,'Adj Close']>1) else 0
     # drop first 10 columns due to nan
     op_df = op_df[10:]
+    op_df.index = range(len(op_df))
     return op_df
+    
 
-if __name__ == '__main__':
-    ### file path
-    os.chdir(r'C:\Users\ZFang\Desktop\TeamCo\machine learning prediction\\')
-    file_name = 'sp500_monthly.csv'
-    new_file_name = 'sp500_monthly_op.csv'
-    sp_df = pd.read_csv(file_name)
-    
-    
-    ### Generate the columns, calculate the technical indactors
-    sp_df = gen_df(sp_df)  
-        
-    ### Generate opinion dataframe, which use (-1,1) to measure the upward and downward trend
-    # op_df = gen_op_df(sp_df)
-    # op_df.to_csv(new_file_name, index=True, header=True, index_label='index')
-    
-    op_df = pd.read_csv(new_file_name, index_col='index')
+def para_svm(dataframe):
     ### Training and Testing Set
-    random.seed(0)
-    sample_index = random.sample(list(op_df.index),int(0.7*len(op_df.index)))
-    op_df_train = op_df.ix[sample_index]
-    op_df_test = op_df.drop(sample_index)
-    # columns = ['SMA_10','Momentum','stoch_K', 'WMA_10', 'MACD','A/D', 'Volume', 'Fed Rate', 'Un Empl', 'GDP']
-
-    columns = ['Fed Rate', 'Un Empl', 'GDP', '3MTB']
+    random.seed(0) 
+    sample_index = random.sample(list(dataframe.index),int(1*len(dataframe.index)))
+    para_index = random.sample(sample_index, int(0.5*len(sample_index)))
+    op_df_train = dataframe.ix[para_index]
+    op_df_holdout = dataframe.drop(para_index)
+    columns = ['SMA_10','Momentum','stoch_K', 'WMA_10', 'MACD','A/D' , 'Volume']
     X = op_df_train[columns].as_matrix()
     Y = op_df_train['Adj Close'].as_matrix()
     
@@ -95,19 +82,46 @@ if __name__ == '__main__':
     poly_svc = svm.SVC(cache_size = 1000, kernel='poly', degree=3, C=C).fit(X, Y)
     lin_svc = svm.LinearSVC(loss='squared_hinge', penalty='l1', dual=False, C=C).fit(X, Y)
     
-    X_test = op_df_test[columns].as_matrix()
-    Y_test = op_df_test['Adj Close'].as_matrix()
+    X_holdout = op_df_holdout[columns].as_matrix()
+    Y_holdout = op_df_holdout['Adj Close'].as_matrix()
     Z = pd.DataFrame(np.zeros((1,4)), columns = ['SVC with linear kernel','LinearSVC (linear kernel)',
                                                  'SVC with RBF kernel','SVC with polynomial'])
-    Y_result = Y_test
+    Y_result = Y_holdout
     
     
     ### Make the prediction
     for i, clf in enumerate((svc, lin_svc, rbf_svc, poly_svc)):
-        Y_result = np.vstack((Y_result, np.array(clf.predict(X_test)))) # append prediction on Y_result
-        Z.iloc[0,i] = sum(clf.predict(X_test)==Y_test)/len(clf.predict(X_test))
+        Y_result = np.vstack((Y_result, np.array(clf.predict(X_holdout)))) # append prediction on Y_result
+        Z.iloc[0,i] = sum(clf.predict(X_holdout)==Y_holdout)/len(clf.predict(X_holdout))
     Y_result = Y_result.T
+    return Z, Y_result
+
+
+if __name__ == '__main__':
+    ### file path
+    os.chdir(r'C:\Users\ZFang\Desktop\TeamCo\machine learning prediction\\')
+    file_name = 'appl.csv'
+    new_file_name = 'appl_op.csv'
+    orig_df = pd.read_csv(file_name)
     
+    
+    ### Generate the columns, calculate the technical indactors
+    ra_df = gen_df(orig_df)  
+        
+    ### Generate opinion dataframe, which use (-1,1) to measure the upward and downward trend
+    # op_df = gen_op_df(ra_df)
+    # op_df.to_csv(new_file_name, index=True, header=True, index_label='index')
+    
+    op_df = pd.read_csv(new_file_name, index_col='index')
+    accuracy_df = pd.DataFrame(np.zeros((1,4)), columns = ['SVC with linear kernel','LinearSVC (linear kernel)',
+                                             'SVC with RBF kernel','SVC with polynomial'])
+    for i in set(op_df['Year']):
+        yr_df = op_df[op_df['Year']==i]
+        Z, Y_result = para_svm(yr_df)
+        accuracy_df = accuracy_df.append(Z, ignore_index=True)
+    
+    
+'''
     
     ### Output
     writer = pd.ExcelWriter('result.xlsx', engine = 'xlsxwriter')
@@ -115,4 +129,4 @@ if __name__ == '__main__':
                                       'SVC with RBF kernel','SVC with polynomial']).to_excel(writer, '%s' %'result')
     writer.save()
     
-    
+'''

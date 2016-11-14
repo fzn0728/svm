@@ -38,21 +38,27 @@ if __name__ == '__main__':
     # op_df.to_csv(new_file_name, index=True, header=True, index_label='index')
     
     op_df = pd.read_csv(new_file_name, index_col='index')
-    accuracy_df_svm = pd.DataFrame(np.zeros((1,4)), columns = ['SVC with linear kernel','LinearSVC (linear kernel)',
-                                             'SVC with RBF kernel','SVC with polynomial'])
+    
+    # f.tune_para(op_df)
+    
+
+    result_df_svm = pd.DataFrame(np.zeros((12,3)), columns = ['Accuracy','Precision','Recall'], index = set(op_df['Year']))
     accuracy_df_ann =pd.DataFrame(np.zeros((1,1)), columns = ['ANN with backpropagation'])
     
-    
+    j = 0
     for i in set(op_df['Year']):
+        print("Year")
         yr_df = op_df[op_df['Year']==i]
-        Z, Y_result = f.para_svm(yr_df)
-        accuracy_df_svm = accuracy_df_svm.append(Z, ignore_index=True)
-    
+        accuracy, precision, recall = f.tune_para(yr_df)
+        result_df_svm.iloc[j,] = [accuracy, precision, recall]
+        j += 1
+
+'''    
     for i in set(op_df['Year']):
         yr_df = op_df[op_df['Year']==i]
         Z, Y_result = f.para_ann(yr_df)
         accuracy_df_ann = accuracy_df_ann.append(Z, ignore_index=True)
-'''
+
     
     ### Output
     writer = pd.ExcelWriter('result.xlsx', engine = 'xlsxwriter')

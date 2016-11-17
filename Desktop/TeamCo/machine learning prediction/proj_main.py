@@ -28,20 +28,23 @@ if __name__ == '__main__':
     ra_df = f.gen_df(orig_df)  
         
     ### Generate opinion dataframe, which use (-1,1) to measure the upward and downward trend
-    op_df = f.gen_op_df(ra_df)
-    op_df.to_csv(new_file_name, index=True, header=True, index_label='index')
+    # op_df = f.gen_op_df(ra_df)
+    # op_df.to_csv(new_file_name, index=True, header=True, index_label='index')
     
-    # op_df = pd.read_csv(new_file_name, index_col='index')
-    # f.tune_para(op_df)
+    op_df = pd.read_csv(new_file_name, index_col='index')
     
-    result_df_svm = pd.DataFrame(np.zeros((11,3)), columns = ['Accuracy','Precision','Recall'], index = set(op_df['Year']))
+    result_arr = np.zeros((1,5))
     accuracy_df_ann =pd.DataFrame(np.zeros((1,1)), columns = ['ANN with backpropagation'])
     
     
+    for i in range(201, len(op_df.index)):
+        Y_result = f.tune_para(op_df, i)
+        result_arr = np.append(result_arr, Y_result, axis=0)
+    Y_result_df = pd.DataFrame(result_arr, columns = ['True value', 'SVC with linear kernel','LinearSVC (linear kernel)', 'SVC with RBF kernel','SVC with polynomial'])
+        
     
     
-    
-'''    
+'''
     j = 0
     for i in set(op_df['Year']):
         print("Year_%s" %i)

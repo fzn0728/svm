@@ -14,7 +14,7 @@ import random
 from datetime import datetime
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, TimeSeriesSplit
 from sklearn.metrics import classification_report, accuracy_score, precision_score, recall_score
 
     
@@ -49,8 +49,10 @@ def gen_df(dataframe):
 
 def gen_op_df(dataframe):
     op_df = pd.DataFrame(np.zeros((len(dataframe),9)), columns=['Date', 'SMA_10', 'Momentum', 
-                         'stoch_K', 'WMA_10', 'MACD', 'A/D', 'Volume', 'Adj Close'])
-    op_df['Year'] = [datetime.strptime(i, '%Y-%m-%d').year for i in dataframe['Date'].values]
+                         'stoch_K', 'WMA_10', 'MACD', 'A/D', 'Volume', 'Adj Close', 'Adj Close Value'])
+    op_df['Date'] = dataframe['Date']
+    op_df['Adj Close Value'] = dataframe['Adj Close']
+    op_df['Year'] = [datetime.strptime(i, '%m/%d/%Y').year for i in op_df['Date'].values]
     for i in range(10,len(dataframe.index)-1):
         op_df.loc[i,'SMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'SMA_10']) else 0
         op_df.loc[i,'WMA_10']=1 if (dataframe.loc[i,'Adj Close']>dataframe.loc[i,'WMA_10']) else 0
@@ -65,7 +67,6 @@ def gen_op_df(dataframe):
     op_df.index = range(len(op_df))
     return op_df
     
-
     
 def tune_para(dataframe):
     
@@ -75,54 +76,58 @@ def tune_para(dataframe):
     X = dataframe[columns].as_matrix()
     y = dataframe['Adj Close'].as_matrix()
     
-    # Split the dataset in two equal parts
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.5, random_state=0)
+    # Time split 
+    tscv = TimeSeriesSplit(n_splits=1)
+    for train_index, test_index in tscv.split(X):
+        print("TRAIN:", train_index, "TEST:", test_index)
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+    return X_train, X_test, y_train, y_test
     
-    # Set the parameters by cross-validation
-    tuned_parameters = [{'kernel': ['rbf'], 'gamma': [0.7,0.8,0.9,1],
-                         'C': [0.7,0.8,0.9,1]},
-                        {'kernel': ['linear'], 'C': [0.7,0.8,0.9,1]},
-                         {'kernel':['poly'], 'degree': [2,3,4,5]}]
-    
-    
-    
-    clf = GridSearchCV(svm.SVC(C=1), tuned_parameters, cv=2)
-    clf.fit(X_train, y_train)
-
-    print("Best parameters set found on development set:")
-    print()
-    print(clf.best_params_)
-    print()
-    print("Grid scores on development set:")
-    print()
-    means = clf.cv_results_['mean_test_score']
-    stds = clf.cv_results_['std_test_score']
-    for mean, std, params in zip(means, stds, clf.cv_results_['params']):
-        print("%0.3f (+/-%0.03f) for %r"
-              % (mean, std * 2, params))
-    print()
-
-    print("Detailed classification report:")
-    print()
-    print("The model is trained on the full development set.")
-    print("The scores are computed on the full evaluation set.")
-    print()
-    y_true, y_pred = y_test, clf.predict(X_test)
-    report = classification_report(y_true, y_pred)
-    print(report)
-    print()
-    
-    ### Calculate Output number
-    accuracy = accuracy_score(y_true, y_pred)
-    precision = precision_score(y_true, y_pred)
-    recall = recall_score(y_true, y_pred)
+    '''
+        # Set the parameters by cross-validation
+        tuned_parameters = [{'kernel': ['rbf'], 'gamma': [0.7,0.8,0.9,1],
+                             'C': [0.7,0.8,0.9,1]},
+                            {'kernel': ['linear'], 'C': [0.7,0.8,0.9,1]},
+                             {'kernel':['poly'], 'degree': [2,3,4,5]}]
         
-    return accuracy, precision, recall
-    # Note the problem is too easy: the hyperparameter plateau is too flat and the
-    # output model is the same for precision and recall with ties in quality.
+        
+        
+        clf = GridSearchCV(svm.SVC(C=1), tuned_parameters, cv=3)
+        clf.fit(X_train, y_train)
+        print("Best parameters set found on development set:")
+        print()
+        print(clf.best_params_)
+        print()
+        print("Grid scores on development set:")
+        print()
+        means = clf.cv_results_['mean_test_score']
+        stds = clf.cv_results_['std_test_score']
+        for mean, std, params in zip(means, stds, clf.cv_results_['params']):
+            print("%0.3f (+/-%0.03f) for %r"
+                  % (mean, std * 2, params))
+        print()
     
-    
+        print("Detailed classification report:")
+        print()
+        print("The model is trained on the full development set.")
+        print("The scores are computed on the full evaluation set.")
+        print()
+        y_true, y_pred = y_test, clf.predict(X_test)
+        report = classification_report(y_true, y_pred)
+        print(report)
+        print()
+        
+        ### Calculate Output number
+        accuracy = accuracy_score(y_true, y_pred)
+        precision = precision_score(y_true, y_pred)
+        recall = recall_score(y_true, y_pred)
+            
+        return X_train, y_train, accuracy, precision, recall
+        # Note the problem is too easy: the hyperparameter plateau is too flat and the
+        # output model is the same for precision and recall with ties in quality.
+    '''
+
 def para_svm(dataframe):
     ### Training and Testing Set
     random.seed(0) 
@@ -156,7 +161,6 @@ def para_svm(dataframe):
         Z.iloc[0,i] = sum(pred==Y_holdout)/len(pred)
     Y_result = Y_result.T
     return Z, Y_result
-    
     
     
 def para_ann(dataframe):

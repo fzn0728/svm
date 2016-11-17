@@ -17,11 +17,6 @@ from datetime import datetime
 import proj_func as f
 
 
-
-
-
-
-
 if __name__ == '__main__':
     ### file path
     os.chdir(r'C:\Users\ZFang\Desktop\TeamCo\machine learning prediction\\')
@@ -29,31 +24,33 @@ if __name__ == '__main__':
     new_file_name = 'appl_op.csv'
     orig_df = pd.read_csv(file_name)
     
-    
     ### Generate the columns, calculate the technical indactors
     ra_df = f.gen_df(orig_df)  
         
     ### Generate opinion dataframe, which use (-1,1) to measure the upward and downward trend
-    # op_df = f.gen_op_df(ra_df)
-    # op_df.to_csv(new_file_name, index=True, header=True, index_label='index')
+    op_df = f.gen_op_df(ra_df)
+    op_df.to_csv(new_file_name, index=True, header=True, index_label='index')
     
-    op_df = pd.read_csv(new_file_name, index_col='index')
-    
+    # op_df = pd.read_csv(new_file_name, index_col='index')
     # f.tune_para(op_df)
     
-
-    result_df_svm = pd.DataFrame(np.zeros((12,3)), columns = ['Accuracy','Precision','Recall'], index = set(op_df['Year']))
+    result_df_svm = pd.DataFrame(np.zeros((11,3)), columns = ['Accuracy','Precision','Recall'], index = set(op_df['Year']))
     accuracy_df_ann =pd.DataFrame(np.zeros((1,1)), columns = ['ANN with backpropagation'])
     
+    
+    
+    
+    
+'''    
     j = 0
     for i in set(op_df['Year']):
-        print("Year")
+        print("Year_%s" %i)
         yr_df = op_df[op_df['Year']==i]
-        accuracy, precision, recall = f.tune_para(yr_df)
+        X_train, y_train, accuracy, precision, recall = f.tune_para(yr_df)
         result_df_svm.iloc[j,] = [accuracy, precision, recall]
         j += 1
 
-'''    
+    
     for i in set(op_df['Year']):
         yr_df = op_df[op_df['Year']==i]
         Z, Y_result = f.para_ann(yr_df)

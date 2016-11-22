@@ -88,7 +88,6 @@ def tune_para(dataframe, i):
     rbf_svc = svm.SVC(cache_size = 1000, kernel='rbf', gamma=0.7, C=C).fit(X_train, y_train)
     poly_svc = svm.SVC(cache_size = 1000, kernel='poly', degree=3, C=C).fit(X_train, y_train)
     lin_svc = svm.LinearSVC(loss='squared_hinge', penalty='l1', dual=False, C=C).fit(X_train, y_train)
-
     Y_result  = y_test
     
     
@@ -96,7 +95,6 @@ def tune_para(dataframe, i):
     for i, clf in enumerate((svc, lin_svc, rbf_svc, poly_svc)):
         pred = clf.predict(X_test)
         Y_result = np.vstack((Y_result, np.array(pred))) # append prediction on Y_result
-
     return Y_result.T
     
     

@@ -38,10 +38,15 @@ if __name__ == '__main__':
     
     
     for i in range(201, len(op_df.index)):
-        Y_result = f.tune_para(op_df, i)
+        Z, Y_result = f.tune_para(op_df, i)
         result_arr = np.append(result_arr, Y_result, axis=0)
     Y_result_df = pd.DataFrame(result_arr, columns = ['True value', 'SVC with linear kernel','LinearSVC (linear kernel)', 'SVC with RBF kernel','SVC with polynomial'])
-        
+    
+    # Calculate Accuracy
+    Accuracy = pd.DataFrame(np.zeros((1,4)), columns = ['SVC with linear kernel','LinearSVC (linear kernel)',
+                                             'SVC with RBF kernel','SVC with polynomial'])
+    for i in range(4):
+        Accuracy.iloc[0,i] = sum(Y_result_df.iloc[:,0] == Y_result_df.iloc[:,i])/len(Y_result_df.iloc[:,0])
     
     
 '''

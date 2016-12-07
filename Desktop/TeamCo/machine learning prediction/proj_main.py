@@ -38,7 +38,7 @@ if __name__ == '__main__':
     
     
     for i in range(201, len(op_df.index)):
-        Z, Y_result = f.tune_para(op_df, i)
+        Y_result = f.tune_para(op_df, i)
         result_arr = np.append(result_arr, Y_result, axis=0)
     Y_result_df = pd.DataFrame(result_arr, columns = ['True value', 'SVC with linear kernel','LinearSVC (linear kernel)', 'SVC with RBF kernel','SVC with polynomial'])
     

@@ -16,8 +16,15 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
 from sklearn.metrics import classification_report, accuracy_score, precision_score, recall_score
+from datetime import datetime
+import pandas_datareader.data as wb
 
-    
+def get_etf(stocklist):
+    start = datetime(2011,9,19)
+    end = datetime(2016,12,1)
+    p = wb.DataReader(stocklist,'yahoo',start,end)
+    return_df = p['Adj Close']
+    return return_df
 
 
 def gen_df(dataframe):
